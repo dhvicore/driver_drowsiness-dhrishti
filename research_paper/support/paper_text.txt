@@ -1,0 +1,204 @@
+Abstract—This paper presents the design and software verification of a temporal decision engine for camera-based driver drowsiness monitoring. The engine accepts eye and mouth aspect ratios and combines median filtering, hysteresis, sustained eye-closure duration, recent yawning, and a rolling closed-eye sample ratio. A bounded evidence score and a prioritized decision policy produce four monitoring states: alert, fatigued, drowsy, and critical. The implementation uses explicit thresholds and event histories rather than a trained temporal classifier, allowing each decision to be traced to observable cues. Eight deterministic scenarios with synthetic feature streams and a controlled clock verify selected state transitions, event counting, and memory expiry. All eight scenarios pass their specified assertions; these results establish functional behavior only. No participant-level detection accuracy, public-dataset benchmark, or end-to-end latency is claimed. The analysis identifies limitations associated with fixed thresholds, sampling-dependent smoothing, missing observation handling, and the difference between sample-based eye closure and physiological eyelid-closure measurements. A subject-independent evaluation protocol and implementation diagrams provide a basis for subsequent experimental validation.
+
+Index Terms—Driver drowsiness, eye aspect ratio, yawning, temporal fusion, driver monitoring.
+
+I. INTRODUCTION
+
+Driver monitoring requires reasoning about behavior over time. A closed eye in one image may indicate an ordinary blink, whereas a sustained closure can justify an urgent warning. Mouth opening also has multiple explanations, including speech and yawning. A useful monitoring system must therefore retain event duration and recent history rather than treating each image as an independent decision.
+
+Ocular measurements offer one established basis for monitoring alertness. The Federal Highway Administration describes PERCLOS as the proportion of time for which the eyes are at least 80% closed, emphasizing slow closures rather than ordinary blinks [1]. Facial-landmark methods provide another practical component: Soukupová and Čech estimate eye aspect ratio and classify temporal blink patterns [2]. YawDD provides in-car videos containing yawning and competing mouth activities for evaluating this second behavioral cue [3]. These sources motivate temporal eye and mouth analysis without establishing the accuracy of a particular project implementation.
+
+This work examines the Drishti temporal engine. Its research question is whether a compact, explicit decision policy can represent transient blinks, prolonged closure, and repeated yawning within one inspectable monitoring process. The contribution is a reproducible description of the implemented rules, a controlled functional verification, and an evaluation design that separates component behavior from the broader claim of detecting driver drowsiness. The current contribution is an engineering prototype; its physiological validity and comparative effectiveness remain experimental questions.
+
+A. Driver Drowsiness as a Monitoring Problem
+
+Drowsiness can reduce attention, slow responses to sudden road events, and impair judgment before a driver falls asleep. Sleep restriction, long shifts, and monotonous travel can contribute to the problem. NHTSA identifies midnight to 6 a.m. and late afternoon as common periods for drowsy-driving crashes [4]. Camera monitoring seeks observable changes early enough to support an actionable warning, while recognizing that facial behavior is an indirect indicator of alertness.
+
+Fig. 1 illustrates drowsiness at the wheel, and Fig. 2 provides an illustrative resting posture in a car. The CDC identifies repeated yawning or blinking, lane drifting, and difficulty remembering recent travel as warning signs [5]. Eye closure and yawning motivate the two input cues used here; head posture and vehicle movement are not measured by this engine. The photographs and illustrations support the problem description and are not experimental samples or evidence that a pictured person was driving while impaired.
+
+
+
+Fig. 1. Drowsiness at the wheel, illustrated by the CDC. Header excerpt from a public-domain educational poster [5].
+
+
+
+Fig. 2. Illustrative resting posture at a steering wheel. Photograph by Margo Evardson, Pexels [6], used under the Pexels License; no drowsiness diagnosis or vehicle motion is inferred.
+
+II. RELATED WORK
+
+Landmark-based blink detection [2] uses eye geometry and temporal classification. Learned alternatives include the multi-granularity convolutional and recurrent framework of Lyu et al. [7] and the blink-sequence model accompanying the realistic dataset of Ghoddoosian et al. [8]. Dewi et al. investigate adjusted eye-aspect-ratio thresholds [9], supporting the need to examine variation between users. More recently, YawDD+ provides finer temporal annotations for yawning models [10]. Table I summarizes these sources and their implications for evaluation.
+
+The implementation considered here uses no learned temporal weights. Its rules explicitly distinguish current severe closure from historical evidence. This makes the decision path accessible, but creates a calibration burden: the thresholds, evidence weights, and semantic meanings of the output states must be tested. A rule-based implementation cannot be assumed to outperform learned approaches, and published results under different datasets and protocols are not a direct ranking.
+
+
+
+TABLE I. COMPARISON OF RELEVANT RESEARCH
+
+Reference no. | Dataset used | Methodology / algorithm used | Performance parameters | Research gap / disadvantages
+
+[1] | Controlled ocular measurement and psychomotor-vigilance study | Physiological PERCLOS validation | Relationship with alertness and vigilance; no project accuracy | The project needs calibrated eyelid-closure measurement before claiming equivalence.
+
+[2] | ZJU and Eyeblink8 video sequences | Facial landmarks, eye aspect ratio, short temporal window and support vector machine | Blink detection; not a four-state drowsiness benchmark | Blink recognition alone does not establish fatigue or warning validity.
+
+[3] | YawDD in-car video sets | Dataset of normal mouth activity, speech or singing, and yawning | 322 videos in one camera setup; 29 in the other; dataset descriptors | Yawning labels do not by themselves establish physiological drowsiness.
+
+[7] | NTHU-DDD; additional FI-DDD dataset | Multi-granularity convolutional features and long short-term memory | Authors report 90.05% accuracy and approximately 37 frames/s on NTHU-DDD evaluation set | Hardware and protocol differ from this project; model and inference cost require measurement.
+
+[8] | UTA-RLDD: 60 subjects, approximately 30 h | Blink features with hierarchical multiscale long short-term memory | Three video states: alert, low vigilant, drowsy; classification benchmark | Its three labels do not directly validate this engine’s four warning states.
+
+[9] | Talking Face, Eyeblink8, Eye Video S1 | Modified eye aspect ratio for blink detection | Blink-detection evaluation across datasets | User-dependent eye geometry motivates threshold calibration; blink labels remain distinct from drowsiness.
+
+[10] | YawDD+ frame annotations derived from YawDD | Human-verified temporal labeling; MNasNet and YOLOv11 models | v3 authors report 99.34% classification accuracy and 95.69% detection mAP | Yawn classification and object-detection metrics cannot be transferred to drowsiness classification.
+
+Reported numbers above belong to the cited authors and their experimental settings. They are not measurements of Drishti. Dataset quantities describe scale rather than predictive performance. The 2026 revision of [10] is cited as an arXiv preprint version to keep its reported values traceable.
+
+
+
+III. SYSTEM DESIGN AND IMPLEMENTATION
+
+A. Component Boundary
+
+The implemented component is TemporalEngine in temporal_engine.py. Its update(raw_ear, raw_mar) interface consumes two scalar features and returns eye state, filtered features, closure duration, cumulative blink and yawn counts, recent event counts, a closed-eye ratio, target score, displayed score, and status. Python time and collections utilities manage timing and event history; NumPy supplies median filtering. The inspected project contains no substantive camera-acquisition, landmark-extraction, trained-model, alarm-actuation, or dataset-evaluation implementation. Those blocks remain integration requirements.
+
+Fig. 3 distinguishes the implemented temporal engine from the acquisition and presentation components that require integration. The intended processing chain is camera acquisition, facial landmarks, scalar feature extraction, temporal engine, and warning presentation. Only the temporal engine is verified here. A future front end must specify landmark indices, coordinate normalization, confidence checks, camera resolution, and the effective sampling rate. These choices influence the distribution of input ratios and must be fixed before threshold evaluation.
+
+
+
+Fig. 3. Processing pipeline. Shaded blocks are implemented in TemporalEngine; white blocks require integration. Warning presentation follows the engine output.
+
+B. Feature Definitions and Filtering
+
+For six eye landmarks p1 through p6 ordered around the eyelids, the conventional eye aspect ratio is [2]
+
+EAR = (‖p2 − p6‖ + ‖p3 − p5‖) / (2‖p1 − p4‖).  (1)
+
+The module receives EAR rather than computing (1); it does not specify whether a caller averages both eyes. It similarly receives a mouth aspect ratio, MAR, without defining its landmark geometry. A reproducible front end must explicitly define MAR because different vertical-to-horizontal mouth ratios have different numerical scales. The implemented mouth thresholds therefore apply to the expected input convention and are not universal geometric constants.
+
+Each feature is filtered by the median of at most seven recent observations. During initialization, the median uses the samples available. At a steady 20 updates/s, seven observations span 0.30 s between the oldest and newest sample. A persistent step generally needs four new observations to dominate a full odd-length window. The filter suppresses isolated perturbations but can delay measured event onset and offset; its temporal effect changes with update rate.
+
+C. Eye State and Closure Events
+
+The eye state begins OPEN. It changes to CLOSED when filtered EAR is at most 0.23 and returns to OPEN when EAR reaches at least 0.27. Values between these thresholds preserve the preceding state. This hysteresis limits repeated transitions near a single decision threshold. The code comments mention approximate webcam observations, but provide no participant count, calibration record, or independently verifiable experiment.
+
+A closure timer starts at the first update classified CLOSED. When the eye reopens, a closure lasting from 0.08 through 0.65 s increments the cumulative blink count. A closure lasting at least 0.8 s generates one long-closure event while it continues. The event is not registered repeatedly during that closure. Durations between 0.65 and 0.8 s fall outside both event definitions. All timings concern the filtered state, which can differ from the raw physical eyelid movement.
+
+Fig. 4 summarizes the two eye-state transitions and the intermediate band that preserves the preceding state.
+
+
+
+Fig. 4. Eye-state hysteresis using the implemented filtered EAR thresholds.
+
+D. Yawn State and Event Memory
+
+A yawn candidate starts when filtered MAR is at least 0.42. It is confirmed only if that condition persists for at least 0.65 s. Confirmation increments the cumulative yawn count and stores an event timestamp. After confirmation, the active yawn ends when MAR falls to at most 0.28. Thus, the lower stopping threshold preserves an active event through intermediate mouth openings. A brief threshold crossing that fails the duration requirement produces no yawn event.
+
+Yawn events remain in a 45 s history, while long closures remain in a 30 s history. Events are removed when their age exceeds the corresponding window; an event exactly on the boundary remains until the next qualifying update. Counts therefore represent recent event onsets or registrations rather than event duration. An extremely long active yawn can outlive its event-memory entry.
+
+E. Rolling Eye Closure Proxy
+
+At each update, the engine stores a timestamp and binary eye state, then retains entries from the preceding 30 s. Its quantity named perclos is
+
+Psample(t) = (Σ ci) / N,  ci ∈ {0, 1},  ti ≥ t − 30 s.  (2)
+
+Here, ci denotes the thresholded closed state and N is the number of retained updates. Equation (2) is a sample proportion. It approximates a time proportion only when observations are regularly spaced. It includes short blinks, uses the available history during startup, and does not measure 80% eyelid coverage. It should therefore be described as a PERCLOS-inspired proxy rather than an established physiological PERCLOS measurement [1]. An initial closed sample immediately yields a ratio of 1, despite the absence of a complete observation window.
+
+IV. EVIDENCE FUSION AND WARNING POLICY
+
+A. Bounded Evidence Score
+
+Let d be current closure duration, P the sample ratio, Y recent yawns, L recent long closures, and I the active-yawn indicator. The target score is
+
+T = min(100, C(d) + E(P) + W(Y) + A(I) + H(L) + B).  (3)
+
+Closure evidence C contributes 20, 45, 65, or 85 points when d reaches 0.8, 1.5, 2.0, or 3.0 s, respectively, using only the highest satisfied interval. Eye-ratio evidence E contributes 10, 18, 25, or 30 points at P thresholds of 0.20, 0.30, 0.40, or 0.50. W contributes 10 for one recent yawn, 20 for two, and 30 for at least three. An active yawn adds five points. H contributes eight points for one long closure, 18 for two or three, and 25 for at least four. Each contribution is otherwise zero.
+
+A single ten-point bonus B applies when d is at least 0.8 s and either Y is at least two or P is at least 0.35. The implementation checks the yawn condition first and the ratio condition second, so it never adds both bonuses. All weights are hand-set engineering choices. The resulting 0–100 value is an evidence score, not an estimated probability or percentage of drowsiness.
+
+B. Displayed Score and Recovery
+
+The displayed score S follows an asymmetric recurrence:
+
+S* = Sprev + α(T − Sprev).                                      (4)
+
+The coefficient α is 0.20 when T exceeds the previous score and 0.08 otherwise. If the eyes are open and no yawn is active, an additional 0.12 is subtracted on that update. The value is clipped to [0, 100] and rounded to an integer for the reported score. These coefficients operate per update rather than per second. Consequently, higher update rates produce faster score evolution in physical time. A future revision can use elapsed-time coefficients after verifying equivalent behavior.
+
+C. Prioritized Status Selection
+
+The decision policy first assigns CRITICAL for d ≥ 3.0 s or for d ≥ 2.0 s combined with at least two recent yawns. If neither condition holds, DROWSY is selected for d ≥ 1.5 s; alternatively, P ≥ 0.45 with at least two recent long closures also qualifies. A third DROWSY rule requires score ≥ 55 together with P ≥ 0.35 or d ≥ 0.8 s. These conditions are evaluated before the fatigue rules.
+
+If no higher state applies, FATIGUED is assigned when at least two yawns remain in memory or the score reaches 30. Otherwise, the state is ALERT. These names are operational output labels. They do not establish a clinical diagnosis, and the four-state policy does not directly match the three labels in UTA-RLDD [8]. Current severe closure can trigger CRITICAL before the smoothed score reaches a high value, while historical evidence can keep lower-level warnings active after the eyes reopen.
+
+V. FUNCTIONAL VERIFICATION
+
+A. Deterministic Test Method
+
+The unmodified engine was exercised using synthetic EAR and MAR sequences at 20 updates/s. A patched clock supplied timestamps beginning at a fixed epoch, avoiding execution-speed dependence. Each scenario used a fresh engine. Open-eye input was 0.35, closed-eye input was generally 0.15, neutral mouth input was 0.15, and sustained mouth opening was 0.60. The verification script and machine-readable outcomes are retained with the paper. No camera images, volunteers, or public-dataset labels were used in these checks.
+
+Eight scenarios tested: (1) stable open-eye baseline; (2) hysteresis across closed, intermediate, and reopening EAR values; (3) one short blink; (4) progression from sustained closure to DROWSY and CRITICAL with one long-closure registration; (5) rejection of brief mouth opening; (6) two confirmed yawns producing FATIGUED; (7) expiry of a yawn from recent memory while its cumulative count persists; and (8) a closed-eye cold start. Every scenario passed its explicit assertions.
+
+Fig. 5 shows an additional synthetic trace from the unmodified engine at 20 updates/s: raw EAR is 0.15 from 1.05 to 5.00 s and 0.35 otherwise, with MAR fixed at 0.15. Median filtering shifts measured closure onset and reopening. The output follows the full warning policy, including score-based transitions.
+
+
+
+Fig. 5. Engine response to a controlled synthetic closure and reopening. This trace illustrates software behavior; it is not a participant or dataset detection result.
+
+B. Interpretation of Verified Behavior
+
+The baseline retained ALERT with zero score and zero closed-eye ratio. The hysteresis scenario preserved CLOSED through an intermediate EAR of 0.25 and reopened at 0.30. A short closure incremented the blink counter without registering a long closure. Continued closure generated DROWSY and then CRITICAL, while its long-closure event count stayed at one. Sustained mouth opening produced separate events only after the mouth returned to its stopping condition between openings.
+
+The cold-start scenario yielded P = 1 with closure duration zero and an ALERT status. This illustrates that a large startup ratio alone does not determine status, and that the ratio initially describes only one sample. The checks demonstrate selected state-machine properties; eight passing scenarios are not a 100% detection-accuracy result. They do not cover every boundary, irregular input, missing observation, or interaction between cues.
+
+VI. PROPOSED DATASET EVALUATION
+
+A. Resources and Labeling
+
+Project dataset samples and the integrated prototype photograph remain to be added after the recording and evaluation configuration is finalized. Figures 1 and 2 illustrate the road-safety problem only. The dataset montage should identify its source and actual sample labels; the prototype photograph should show the camera placement and monitoring display used in evaluation.
+
+UTA-RLDD is a candidate resource for evaluation of temporal drowsiness behavior, while YawDD and YawDD+ can support yawning-component evaluation [3], [8], [10]. These resources have distinct labels and purposes. Yawn recognition should be reported separately from drowsiness-state recognition. For the project’s own data, the final study should describe recruitment, recording conditions, camera placement, spectacles, illumination, frame rate, and the reference-label procedure. Four warning labels require explicit annotation criteria and should not be inferred directly from the engine’s own outputs.
+
+Training, calibration, and test partitions should be disjoint by subject. Even a rule-based system needs a calibration partition if thresholds are adjusted. Adjacent frames or clips from the same person must not be randomly divided across calibration and test sets. All threshold and score choices should be frozen before final test evaluation. The paper should state which datasets were actually used, rather than treating the literature inventory as experimental provenance.
+
+B. Metrics and Comparisons
+
+For binary event decisions, report precision TP/(TP+FP), recall TP/(TP+FN), and F1 = 2PR/(P+R), where P and R denote precision and recall. For multiclass monitoring, report the confusion matrix, macro-averaged F1, per-class recall, and balanced accuracy. Event matching should specify an onset tolerance and avoid counting every frame of one yawn as a separate event. Confidence intervals should reflect variation between subjects rather than treating highly correlated frames as independent observations.
+
+Operational measures should include false warnings per monitored hour, missed sustained closures, event-onset detection delay, and median and upper-percentile processing latency. End-to-end timing must include acquisition, landmark inference, feature computation, engine processing, and warning delivery on a named device. Real-time capability remains unmeasured until these quantities and the observed frame rate are reported.
+
+Ablations should compare an instantaneous eye threshold, eye-duration rules alone, addition of the closure ratio, and the complete eye-and-mouth policy. Separate ablations can remove median filtering, hysteresis, or the asymmetric score filter. Comparisons must use the same subjects, input features, sampling assumptions, and metrics. Report both improvement and failure cases rather than selecting only favorable clips.
+
+VII. DISCUSSION AND LIMITATIONS
+
+The engine offers an inspectable temporal policy whose outputs can be related to specific durations and event histories. The functional results support the claim that selected rules operate as described. They do not establish that the thresholds distinguish physiological fatigue across people. Eye geometry, facial motion, camera angle, spectacles, illumination, and mouth-ratio conventions can alter the supplied features. Individual calibration should be evaluated against a fixed-threshold baseline before adoption.
+
+Several implementation details affect reproducibility. Timestamps come from the wall clock rather than a monotonic timer or recorded video time. Replaying stored video faster than real time would therefore change measured durations unless timing is controlled. Missing or invalid features have no explicit handling policy. A gap while the last known eye state is CLOSED can extend the apparent closure at the next observation. An integration layer needs observation validity, gap handling, and a distinct unavailable state.
+
+The closed-eye proxy weights samples equally, and the histories use different durations. At approximately uniform update frequency f, the 30 s sample history stores roughly 30f entries. Summing its closed flags at every update makes work proportional to retained history length; event histories also grow with the event rate. This is compact at ordinary webcam rates, but constant-time performance should not be claimed without implementation changes and profiling.
+
+Behavioral proxies also contain ambiguities. Talking can resemble yawning, and voluntary eye closure does not necessarily indicate sleepiness. Fixed duration cutoffs can miss atypical blinks or divide a continuous behavior into unsuitable categories. These limitations motivate subject-disjoint validation, clear failure reporting, and comparison with independent reference labels. The prototype photograph and dataset montage should document the actual configuration used for that evaluation.
+
+VIII. CONCLUSION
+
+Drishti implements temporal fusion of eye and mouth cues through median filtering, hysteresis, event histories, a bounded evidence score, and prioritized warning rules. Eight controlled synthetic scenarios verified selected behaviors, including single-event counting and progression during sustained closure. The current evidence supports a functional temporal decision engine, while dataset-level discrimination, false-warning burden, and end-to-end timing remain to be measured. The next experimental stage should integrate a specified landmark front end, record actual dataset provenance, validate labels independently, and evaluate the complete prototype under a subject-independent protocol.
+
+REFERENCES
+
+[1] Federal Highway Administration, “PERCLOS: A valid psychophysiological measure of alertness as assessed by psychomotor vigilance,” TechBrief FHWA-MCRT-98-006, Oct. 1998, doi: 10.21949/1502740.
+
+[2] T. Soukupová and J. Čech, “Real-time eye blink detection using facial landmarks,” in Proc. 21st Computer Vision Winter Workshop, Rimske Toplice, Slovenia, Feb. 2016. [Online]. Available: https://vision.fe.uni-lj.si/cvww2016/proceedings/papers/05.pdf
+
+[3] S. Abtahi, M. Omidyeganeh, S. Shirmohammadi, and B. Hariri, “YawDD: A yawning detection dataset,” in Proc. 5th ACM Multimedia Systems Conf., Singapore, 2014, pp. 24–28, doi: 10.1145/2557642.2563678.
+
+[4] National Highway Traffic Safety Administration, “Drowsy driving,” Accessed: Oct. 16, 2026. [Online]. Available: https://www.nhtsa.gov/risky-driving/drowsy-driving
+
+[5] Centers for Disease Control and Prevention, “Drowsy driving: Asleep at the wheel,” educational poster, CDC Stacks, Nov. 30, 2022. Accessed: Oct. 16, 2026. [Online]. Available: https://stacks.cdc.gov/view/cdc/154522
+
+[6] M. Evardson, “Woman resting on steering wheel in car,” photograph, Pexels. Accessed: Oct. 16, 2026. [Online]. Available: https://www.pexels.com/photo/woman-resting-on-steering-wheel-in-car-35801682/
+
+[7] J. Lyu, Z. Yuan, and D. Chen, “Long-term multi-granularity deep framework for driver drowsiness detection,” 2018, arXiv:1801.02325, doi: 10.48550/arXiv.1801.02325.
+
+[8] R. Ghoddoosian, M. Galib, and V. Athitsos, “A realistic dataset and baseline temporal model for early drowsiness detection,” in Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 178–187, doi: 10.1109/CVPRW.2019.00027.
+
+[9] C. Dewi, R.-C. Chen, X. Jiang, and H. Yu, “Adjusting eye aspect ratio for strong eye blink detection based on facial landmarks,” PeerJ Comput. Sci., vol. 8, Art. no. e943, 2022, doi: 10.7717/peerj-cs.943.
+
+[10] A. Mujtaba, G. Radchenko, M. Masana, and R. Prodan, “YawDD+: Frame-level annotations for accurate yawn prediction,” arXiv:2512.11446, ver. 3, May 2026, doi: 10.48550/arXiv.2512.11446.
+

@@ -18,10 +18,21 @@ node_modules/
 .env.*
 !.env.example
 
-# Papers, presentations, notes and document-build outputs stay local
+# Ignore document builds by default; published outputs and notes are included below
 research_paper/
 output/
 tmp/
 *.docx
 *.pdf
 *.pptx
+
+# Generated deliverables and project information belong in the repository.
+!output/
+!output/**/
+!output/**
+!research_paper/
+research_paper/**
+!research_paper/**/
+!research_paper/**/*.txt
+!research_paper/**/*.md
+!research_paper/output/**
