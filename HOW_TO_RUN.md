@@ -70,7 +70,7 @@ On Dhvani's Mac, the complete project is now at:
 cd "/Users/dhvani/Desktop/driver_drowsiness-dhrishti-main"
 ```
 
-Run that `cd` command in **both terminals** before starting services. This folder contains `server.py` and `web/package.json`. The archive project was moved here; its old iCloud archive path no longer exists. The `driver_drowsiness-dhrishti-main-backup` folder preserves the older, incomplete Desktop copy and lacks the Next.js frontend.
+Run that `cd` command in **both terminals** before starting services. This folder contains `server.py` and `web/package.json`. The archive project was moved here; its old iCloud archive path no longer exists. The `driver_drowsiness-dhrishti-main-backup` folder has also been synchronized with the complete application, including its frontend and backend. The main folder remains the primary working copy.
 
 If using the existing `venv` environment instead of a newly created `.venv`, the backend command is:
 
@@ -86,7 +86,7 @@ Use the same fresh setup and two-terminal commands above from the repository roo
 
 ## Troubleshooting
 
-- **Missing `server.py`:** confirm you opened the current repository folder, not the older `-backup` folder, and run `git pull`.
+- **Missing `server.py`:** confirm you opened a complete repository folder containing `server.py` and `web/package.json`, and run `git pull`.
 - **Wrong project opens:** use the dashboard URL printed by `run.py`; other projects may occupy port 3000 or 3001.
 - **Camera permission denied:** allow camera access for the browser and OS, then retry. Close other camera apps if needed.
 - **Codespaces camera unavailable:** open the forwarded HTTPS URL in an external browser tab, not the editor's embedded preview.

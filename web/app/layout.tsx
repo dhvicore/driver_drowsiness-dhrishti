@@ -41,7 +41,8 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${archivo.variable} ${jetbrains.variable} antialiased`}>
+      {/* Extensions such as Liner can add attributes directly to body before hydration. */}
+      <body suppressHydrationWarning className={`${archivo.variable} ${jetbrains.variable} antialiased`}>
         {children}
       </body>
     </html>
