@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --canvas: #ffffff;
+  --surface: #fafafa;
+  --raised: #f2f2f4;
+  --ink: #0a0a0b;
+  --ink-2: #52525b;
+  --ink-3: #8e8e96;
+  --line: #e4e4e8;
+  --line-strong: #d2d2d8;
+  --blue: #1b3fc4;
+  --blue-on: #ffffff;
+  --blue-wash: #edf1ff;
+  --burgundy: #8e1f35;
+  --burgundy-on: #ffffff;
+  --burgundy-wash: #fbedf0;
+  --sage: #5c8a6c;
+  --logo-metal: #4c556e;
+  --logo-metal-hi: #7a84a3;
+  --logo-z: #0a0a0b;
+  --road-sky: #fafafb;
+  --road-ground: #eeeff2;
+  --road-surface: #e4e5ea;
+  --road-haze: #dfe5f7;
+  --road-edge: #a3a8b6;
+  --road-dash: #5d6272;
+  --road-beam: #ffffff;
+  --road-vignette: rgba(255, 255, 255, 0.55);
+  --lift: 0 1px 2px rgba(10, 10, 11, 0.04), 0 12px 28px -14px rgba(10, 10, 11, 0.16);
+}
+
+.dark {
+  --canvas: #09090b;
+  --surface: #0f0f12;
+  --raised: #17171b;
+  --ink: #fafafa;
+  --ink-2: #a1a1aa;
+  --ink-3: #71717a;
+  --line: #212126;
+  --line-strong: #2f2f36;
+  --blue: #7091ff;
+  --blue-on: #06060a;
+  --blue-wash: #121a33;
+  --burgundy: #e0607a;
+  --burgundy-on: #16060a;
+  --burgundy-wash: #2a1119;
+  --sage: #8ab99a;
+  --logo-metal: #7d86a0;
+  --logo-metal-hi: #c3cbe6;
+  --logo-z: #e9eeff;
+  --road-sky: #040406;
+  --road-ground: #0b0c12;
+  --road-surface: #07080c;
+  --road-haze: #1a2344;
+  --road-edge: #a9b6e2;
+  --road-dash: #dfe6ff;
+  --road-beam: #dbe4ff;
+  --road-vignette: rgba(0, 0, 0, 0.6);
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 32px -16px rgba(0, 0, 0, 0.8);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-blue: var(--blue);
+  --color-blue-on: var(--blue-on);
+  --color-blue-wash: var(--blue-wash);
+  --color-burgundy: var(--burgundy);
+  --color-burgundy-on: var(--burgundy-on);
+  --color-burgundy-wash: var(--burgundy-wash);
+  --color-sage: var(--sage);
+  --shadow-lift: var(--lift);
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-feature-settings: "ss01", "cv01";
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+/* Small uppercase label used across the product */
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.rule {
+  height: 1px;
+  background: var(--line);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid var(--canvas);
+  border-radius: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

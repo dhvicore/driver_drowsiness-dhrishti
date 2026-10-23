@@ -25,3 +25,7 @@ tmp/
 *.docx
 *.pdf
 *.pptx
+
+# Tool-generated local build metadata
+*.tsbuildinfo
+web/next-env.d.ts

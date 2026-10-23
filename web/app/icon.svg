@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="335 440 580 430">
+  <style>
+    .m { stroke: #4c556e; } .w { fill: #4c556e; } .g { stroke: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .m { stroke: #b4bcd8; } .w { fill: #9aa3bf; } .g { stroke: #0b0b0e; }
+    }
+  </style>
+  <defs>
+    <radialGradient id="i" cx="0.45" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#c3d5ff"/>
+      <stop offset="1" stop-color="#6d8ee2"/>
+    </radialGradient>
+    <mask id="k" maskUnits="userSpaceOnUse" x="335" y="440" width="580" height="430">
+      <circle cx="627" cy="790" r="122" fill="#fff"/>
+      <circle cx="627" cy="790" r="90" fill="#000"/>
+      <path d="M520 752 Q627 728 734 752 L734 797 L520 797 Z" fill="#fff"/>
+      <rect x="604" y="780" width="46" height="90" fill="#fff"/>
+      <circle cx="627" cy="779" r="17" fill="#000"/>
+      <rect x="335" y="852" width="580" height="20" fill="#000"/>
+    </mask>
+  </defs>
+  <path class="m" d="M355 640 Q627 330 900 640 Q627 900 355 640 Z" fill="none" stroke-width="34"/>
+  <circle cx="627" cy="640" r="135" fill="url(#i)"/>
+  <circle cx="627" cy="640" r="70" fill="#0b0e17"/>
+  <circle cx="660" cy="611" r="14" fill="#f4f7ff"/>
+  <circle class="g" cx="627" cy="790" r="129" fill="none" stroke-width="14"/>
+  <path d="M537 790 A90 90 0 0 1 717 790 V852 H537 Z" fill="#0b0e17"/>
+  <rect class="w" x="490" y="660" width="275" height="200" mask="url(#k)"/>
+</svg>

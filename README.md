@@ -1,75 +1,47 @@
 # Drishti — Driver Drowsiness Monitoring
 
-Python driver-monitoring prototype using eye and mouth measurements, temporal warning rules, head pose and phone detection.
+A driver-monitoring prototype with a Next.js dashboard and Flask backend. It uses MediaPipe face landmarks, eye and mouth ratios, temporal warning rules, head pose, and YOLO phone detection.
 
-## Code guide
+## Run in GitHub Codespaces
 
-- [`main.py`](main.py): webcam application; connects MediaPipe landmarks, temporal monitoring, head pose and phone detection.
-- [`temporal_engine.py`](temporal_engine.py): median filtering, hysteresis, closure/yawn timers, event histories, evidence score and warning-state rules.
-- [`head_pose.py`](head_pose.py): estimates head pose and sustained distraction.
-- [`phone_detector.py`](phone_detector.py): YOLO-based phone detection with temporal confirmation.
-- [`model_manager.py`](model_manager.py): loads the saved eye/yawn Keras classifiers and applies MobileNetV2 preprocessing.
-- [`face_analyzer.py`](face_analyzer.py), [`face_regions.py`](face_regions.py), [`landmark_detector.py`](landmark_detector.py): supporting face-analysis utilities.
-- [`yawn.ipynb`](yawn.ipynb): yawning-model notebook.
-- `test_*.py`, `model_test.py`, `eye_compare_live.py`: inspection and demonstration scripts; some require a camera or model dependencies.
-
-## Model files
-
-The repository includes the saved Keras models (`eye_model.keras`, `best_yawn_model.keras`, `eye_state_mobilenetv2.keras`, `yawn_state_mobilenetv2.keras`), MediaPipe `face_landmarker.task`, and YOLO weight files. These files serve different modules; `main.py` uses landmark-based temporal rules and does not load the Keras eye/yawn models through `ModelManager`.
-
-## Run the website and live dashboard
-
-The full website uses two processes: a Flask backend on port **5001** and a Next.js frontend on port **3000**. Run them in separate VS Code terminals.
-
-**Current source location:** the complete website is in the local archive folder below. This GitHub checkout does not yet include `server.py` or the Next.js source and `web/package.json`. A fresh clone can run the desktop prototype, but the website commands require the complete archive copy. Changing this README does not add those missing source files.
-
-### Terminal 1 — backend
+Choose **Code → Codespaces → Create codespace on main**, wait for container setup, then run:
 
 ```bash
-cd "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main"
-source venv/bin/activate
-python server.py
+python3.11 run.py --no-open
 ```
 
-Wait until the backend reports `http://127.0.0.1:5001`, then leave this terminal running.
+In the **Ports** panel, open port **3001** in an external browser and visit `/dashboard` on its forwarded HTTPS URL. Press **Start monitoring** and grant camera permission. The browser sends your camera frames to Flask through the frontend, so no laptop filesystem path or remote webcam is needed. If 3001 is occupied, use the port printed by the launcher.
 
-### Terminal 2 — website
+Existing Codespaces need the latest code and a container rebuild to apply `.devcontainer/devcontainer.json`.
+
+## Run in VS Code locally
+
+Install Python **3.11**, Node.js **22** (including npm), and Git:
 
 ```bash
-cd "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main"
-npm --prefix web run dev
+git clone https://github.com/dhvicore/driver_drowsiness-dhrishti.git
+cd driver_drowsiness-dhrishti
+python3.11 run.py
 ```
 
-If frontend packages have not been installed, run `npm --prefix web install` in that folder first.
+On Windows, use `py -3.11 run.py`. First launch installs dependencies; later launches reuse them. The launcher starts both services, selects free ports, and opens the correct dashboard, normally <http://localhost:3001/dashboard>. Press **Ctrl+C** to stop both.
 
-### Open the website
+See [HOW_TO_RUN.md](HOW_TO_RUN.md) for full instructions, separate-terminal commands, and troubleshooting, and [PROJECT_NOTES.md](PROJECT_NOTES.md) for the existing detector notes.
 
-| Page | Address |
+## Project files
+
+| Path | Purpose |
 |---|---|
-| Landing page | <http://localhost:3000> |
-| Live dashboard | <http://localhost:3000/dashboard> |
+| `run.py` | Dependency setup and combined backend/frontend launcher |
+| `server.py` | Flask APIs, browser camera frame input, detection and MJPEG output |
+| `web/app`, `web/components`, `web/lib` | Next.js landing page and monitoring dashboard |
+| `temporal_engine.py` | Eye closure, yawning, evidence score and warning rules |
+| `head_pose.py`, `phone_detector.py` | Head pose and phone detection |
+| `main.py` | Separate desktop OpenCV application |
+| `.devcontainer/devcontainer.json` | Codespaces Python/Node environment and port forwarding |
 
-Press **Start monitoring** on the dashboard to open the camera, and **Stop monitoring** to close it. Stop both processes with **Ctrl+C** in their terminals. Port 5001 serves the backend; open port 3000 to use the website.
+The active pipeline uses `face_landmarker.task` and `yolo11s.pt`. Other saved Keras models and the notebook are separate experiments; they are not loaded by the dashboard pipeline.
 
-If `python server.py` reports “No such file or directory,” check your folder: the fresh `drishti-check` clone currently lacks this file. Use the complete archive folder for the website.
+The Flask backend defaults to port 5001 and the launcher prefers frontend port 3001. The frontend proxies `/api` to Flask, so only one port needs forwarding. Each running backend has one monitoring session shared across its browser tabs; keep your Codespaces port private. Uploaded camera frames are processed in memory rather than saved to disk.
 
-See [HOW_TO_RUN.md](HOW_TO_RUN.md) for the local website instructions and [PROJECT_NOTES.md](PROJECT_NOTES.md) for project details.
-
-## Run the desktop webcam prototype
-
-Use Python 3.11 in a virtual environment:
-
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python main.py
-```
-
-Run from the repository root so the model paths resolve, and allow camera access when prompted. Press **q** while the camera window is focused to quit; do not type `Q` into the terminal. Stop the website backend before running this app so only one process uses the camera. For the separate Keras model utilities, also install TensorFlow in a compatible environment:
-
-```bash
-python -m pip install tensorflow
-```
-
-Research papers, presentations, study notes, generated documents and local environments are excluded from this code repository.
+Research papers, generated documents, virtual environments and installed dependencies stay outside version control. CPU resources, camera quality and network sampling affect behavior. Use this prototype while stationary; it is not a validated driving safety system.

@@ -1,0 +1,8 @@
+{
+  "name": "Drishti",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
+  "features": { "ghcr.io/devcontainers/features/node:1": { "version": "22" } },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0 libportaudio2 && python -m pip install -r requirements.txt && npm --prefix web ci",
+  "forwardPorts": [3001],
+  "portsAttributes": { "3001": { "label": "Drishti dashboard", "onAutoForward": "openBrowser", "visibility": "private" } }
+}
