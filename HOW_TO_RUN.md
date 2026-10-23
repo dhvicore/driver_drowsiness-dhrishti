@@ -1,79 +1,87 @@
-# How to Run Drishti
+# How to run Drishti
 
-Use Python 3.11 and a working webcam. Run all commands from the project root so model paths resolve.
+The project has two parts that run at the same time, each in its own terminal:
 
-## 1. Get the project
+- **Backend** (Python) — reads the webcam and does the detection. Port **5001**.
+- **Website** (Next.js) — shows the landing page and dashboard. Port **3000**.
 
-```bash
-git clone https://github.com/dhvicore/driver_drowsiness-dhrishti.git
-cd driver_drowsiness-dhrishti
-```
+> Always use the **`iCloud Drive (Archive)`** copy of the project.
+> The folder in `~/Desktop` is an older partial copy and has no `server.py`.
 
-If you already have the project, open a terminal in its folder instead.
+---
 
-## 2. Create a virtual environment
-
-### macOS / Linux
+## Terminal 1 — backend
 
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
+cd "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main" && source venv/bin/activate && python server.py
 ```
 
-### Windows PowerShell
+Wait until it prints `Running on http://127.0.0.1:5001`, then leave it running.
 
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-## 3. Install dependencies
-
-For the browser prototype and a pinned dependency set compatible with the project's MediaPipe code:
+## Terminal 2 — website
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r web/requirements.txt
+cd "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main" && npm --prefix web run dev
 ```
 
-These dependencies also include the packages used by the desktop webcam application. The root `requirements.txt` provides an alternative unpinned dependency list.
+## Open it
 
-## 4. Run the desktop webcam app
+| Page | Address |
+|---|---|
+| Landing page | http://localhost:3000 |
+| Live dashboard | http://localhost:3000/dashboard |
+
+On the dashboard, press **Start monitoring** to open the camera. Press **Stop monitoring** to close it.
+
+To shut everything down, press **Ctrl-C** in each terminal.
+
+---
+
+## Running the original OpenCV window instead
+
+`main.py` is the original program and shows its output in a desktop window rather than the browser:
 
 ```bash
-python main.py
+cd "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main" && source venv/bin/activate && python main.py
 ```
 
-Allow camera access when prompted. The application opens a window named **Driver Monitoring System** and uses the default camera (index `0`). Keep your face visible to view eye, mouth, head-pose and phone-detection information.
+Press **Q** to quit. Only one program can use the camera at a time, so stop `server.py` first.
 
-Press **q** while the camera window is focused to exit.
+---
 
-The desktop app uses `face_landmarker.task` and `yolo11s.pt`, both included in the repository. Keep these files in the project root. The separate Keras eye/yawn classifiers are not used by the active `main.py` pipeline.
+## Running from VS Code
 
-## 5. Run the browser prototype
+1. Open the project: **File → Open Folder**, then pick the `iCloud Drive (Archive)` project folder.
+2. **Terminal → New Terminal**, and run the two commands above in separate tabs (use the **+** button for the second one).
 
-As an alternative to the desktop app:
+To enable the `code` command in your shell: press Cmd+Shift+P in VS Code and choose **Shell Command: Install 'code' command in PATH**.
 
-```bash
-python web/app.py
-```
-
-Open <http://localhost:7860>, allow webcam access and start streaming. Phone detection is optional and uses additional CPU and memory.
-
-For hosting instructions, see [web/DEPLOY.md](web/DEPLOY.md).
+---
 
 ## Troubleshooting
 
-- **Camera does not open:** close other apps using the webcam and check camera permissions for your terminal or Python application. The desktop app selects camera index `0` in `main.py`.
-- **Missing module:** activate `.venv` and install the dependencies using `python -m pip install -r web/requirements.txt`.
-- **MediaPipe compatibility errors:** use Python 3.11 and the pinned `web/requirements.txt` dependencies in a fresh virtual environment.
-- **Model file not found:** run from the project root and confirm the model files are present.
-- **Slow processing:** disable optional phone detection in the browser prototype.
+| Problem | Fix |
+|---|---|
+| `Address already in use` / `Port 5001 is in use` | The backend is already running. Use it, or free the port: `lsof -ti:5001 \| xargs kill` |
+| `zsh: no such file or directory: /venv/bin/python` | The leading `/` is wrong. Use `./venv/bin/python`, or activate the venv and just run `python server.py` |
+| `command not found: code` | Install the VS Code shell command (see above), or use **File → Open Folder** |
+| **Not Found** page in the browser | You opened port 5001, which is the data feed only. The website is on **port 3000** |
+| Dashboard says **Backend unreachable** | The backend isn't running. Do Terminal 1 above |
+| Camera doesn't open | Allow camera access for your terminal or VS Code in **System Settings → Privacy & Security → Camera**, then restart the backend |
+| Status stays **No Driver** | Face the webcam directly; the face must be visible and reasonably lit |
 
-TensorFlow is needed only for the separate Keras model utilities:
+---
+
+## If the environment ever breaks
+
+Rebuild the Python environment (one-time, downloads about 1–2 GB):
 
 ```bash
-python -m pip install tensorflow
+cd "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main" && python3.11 -m venv --clear venv && ./venv/bin/pip install flask flask-cors opencv-contrib-python==5.0.0.93 mediapipe==0.10.14 ultralytics numpy
 ```
 
-Test the prototype while stationary. It is not a validated driving safety system.
+Reinstall the website packages:
+
+```bash
+npm --prefix "/Users/dhvani/iCloud Drive (Archive)/Desktop/driver_drowsiness-dhrishti-main/web" install
+```
