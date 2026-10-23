@@ -5,15 +5,21 @@ Drishti includes a Flask detection backend and the Next.js website. The launcher
 ## GitHub Codespaces
 
 1. On this repository, choose **Code → Codespaces → Create codespace on main**. Wait for the container setup to finish. Existing Codespaces should pull the latest changes and run **Codespaces: Rebuild Container** from the command palette.
-2. In the terminal at the project root, run:
+2. In the terminal at the project root, pull the latest code, install the Linux system libraries, and start the app:
 
    ```bash
+   cd /workspaces/driver_drowsiness-dhrishti
+   git pull origin main
+   sudo apt-get update
+   sudo apt-get install -y libgl1 libglib2.0-0 libportaudio2
    python3.11 run.py --no-open
    ```
 
 3. Open the **Ports** panel and select **Open in Browser** for port **3001**. Use the external browser tab, then visit `/dashboard` on that forwarded HTTPS URL. If the launcher reports another port because 3001 is occupied, forward that port instead.
 4. Press **Start monitoring** and allow camera access. Use **Stop monitoring** to stop the camera. Keep the port private; the app has one monitoring session shared by connected tabs.
 5. Press **Ctrl+C** in the terminal to stop both services.
+
+The Linux library installation is needed once per container; it is safe to repeat if container setup was skipped or incomplete. The launcher installs Python and frontend packages on its first run, which can take several minutes. If it fails after those packages install, correcting the system libraries and rerunning the launcher reuses the installed packages.
 
 Only the frontend port needs forwarding. It proxies `/api` to Flask inside the container. Do not use `localhost:3001` on your laptop to reach Codespaces; use the forwarded URL from the Ports panel.
 
@@ -91,7 +97,7 @@ Use the same fresh setup and two-terminal commands above from the repository roo
 - **Camera permission denied:** allow camera access for the browser and OS, then retry. Close other camera apps if needed.
 - **Codespaces camera unavailable:** open the forwarded HTTPS URL in an external browser tab, not the editor's embedded preview.
 - **Backend unreachable:** check the launcher logs. If running manually, start Flask before the frontend.
-- **Linux missing `libGL.so.1`:** install `libgl1` and `libglib2.0-0`. The supplied Codespaces container installs these.
+- **`ImportError: libGL.so.1` or missing PortAudio in Codespaces:** run `sudo apt-get update` followed by `sudo apt-get install -y libgl1 libglib2.0-0 libportaudio2`, then rerun `python3.11 run.py --no-open`. Python package installation alone does not install these system libraries.
 - **Slow monitoring:** CPU inference and upload speed affect frame rate. This project does not promise a fixed FPS or detection accuracy.
 
 The backend receives camera images for processing and does not save uploaded frames to disk. Each Codespace is intended for a single monitoring session. Test while stationary; this is a prototype, not a validated driving safety system.

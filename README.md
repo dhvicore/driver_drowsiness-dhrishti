@@ -7,8 +7,14 @@ A driver-monitoring prototype with a Next.js dashboard and Flask backend. It use
 Choose **Code → Codespaces → Create codespace on main**, wait for container setup, then run:
 
 ```bash
+cd /workspaces/driver_drowsiness-dhrishti
+git pull origin main
+sudo apt-get update
+sudo apt-get install -y libgl1 libglib2.0-0 libportaudio2
 python3.11 run.py --no-open
 ```
+
+Install the Linux libraries once per container to prevent OpenCV’s `libGL.so.1` import error. The first launcher run installs Python and frontend dependencies; wait for both services to start.
 
 In the **Ports** panel, open port **3001** in an external browser and visit `/dashboard` on its forwarded HTTPS URL. Press **Start monitoring** and grant camera permission. The browser sends your camera frames to Flask through the frontend, so no laptop filesystem path or remote webcam is needed. If 3001 is occupied, use the port printed by the launcher.
 
