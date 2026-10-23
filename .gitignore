@@ -1,4 +1,4 @@
-﻿.venv/
+.venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
@@ -6,3 +6,22 @@ __pycache__/
 .vscode/
 runs/
 datasets/
+
+# Local environments and generated files
+venv/
+node_modules/
+.next/
+.DS_Store
+.claude/
+.codex/
+.agents/
+.env.*
+!.env.example
+
+# Papers, presentations, notes and document-build outputs stay local
+research_paper/
+output/
+tmp/
+*.docx
+*.pdf
+*.pptx
