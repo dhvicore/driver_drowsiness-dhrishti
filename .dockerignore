@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+**/node_modules
+**/.next
+**/__pycache__
+research_paper
+output
+tmp
+.env
+.env.*
+*.pdf
+*.docx
+*.pptx
