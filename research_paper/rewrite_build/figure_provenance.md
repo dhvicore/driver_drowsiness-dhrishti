@@ -1,3 +1,0 @@
-UTA-RLDD montage: source paper by Ghoddoosian, Galib and Athitsos, CVPRW 2019, Figure 1, official CVF Open Access PDF retained in assets/uta_rldd_source_paper.pdf. Used as a credited literature example, not experimental input.
-Official source: https://openaccess.thecvf.com/content_CVPRW_2019/html/AMFG/Ghoddoosian_A_Realistic_Dataset_and_Baseline_Temporal_Model_for_Early_Drowsiness_CVPRW_2019_paper.html
-New EAR and yawn diagrams represent the implementation. Score and rate-sweep charts use synthetic outputs saved in closure_trace_data.json and rate_sweep_data.json. Reproduce with make_ieee_figures.py.
