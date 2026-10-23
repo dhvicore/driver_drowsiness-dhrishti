@@ -36,3 +36,6 @@ research_paper/**
 !research_paper/**/*.txt
 !research_paper/**/*.md
 !research_paper/output/**
+
+# Research paper documents stay local.
+research_paper/output/research/
