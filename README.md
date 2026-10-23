@@ -28,6 +28,35 @@ On Windows, use `py -3.11 run.py`. First launch installs dependencies; later lau
 
 See [HOW_TO_RUN.md](HOW_TO_RUN.md) for full instructions, separate-terminal commands, and troubleshooting, and [PROJECT_NOTES.md](PROJECT_NOTES.md) for the existing detector notes.
 
+## Run backend and frontend in separate VS Code terminals
+
+For a new checkout, install dependencies once from the repository root (macOS/Linux):
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+npm --prefix web ci
+```
+
+**Terminal 1 — backend:**
+
+```bash
+source .venv/bin/activate
+python server.py
+```
+
+Leave it running on port **5001**. Open a second VS Code terminal in the **same project root**.
+
+**Terminal 2 — frontend:**
+
+```bash
+npm --prefix web run dev -- --port 3001
+```
+
+Open <http://localhost:3001/dashboard>, click **Start monitoring**, and allow camera access. Press **Ctrl+C** in each terminal to stop. The frontend command needs no Python environment activation. If a port is occupied by another project, use `python3.11 run.py` to select free ports automatically.
+
+On Windows, create the environment with `py -3.11 -m venv .venv`, install requirements with `.venv\Scripts\python.exe -m pip install -r requirements.txt`, and activate with `.\.venv\Scripts\Activate.ps1` in PowerShell. The npm commands are the same.
+
 ## Project files
 
 | Path | Purpose |

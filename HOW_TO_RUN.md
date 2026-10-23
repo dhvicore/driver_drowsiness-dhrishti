@@ -33,23 +33,56 @@ On first launch, the launcher creates `.venv`, installs the Python requirements,
 
 Open the cloned folder in VS Code with **File → Open Folder**. You can also open your existing complete Desktop project folder and run the launcher there.
 
-## Separate terminals (optional)
+## Run backend and frontend in separate VS Code terminals
 
-After the first launcher setup, stop the launcher before starting these commands:
-
-Terminal 1, from the project root:
+For a new checkout, install dependencies once from the repository root (macOS/Linux):
 
 ```bash
-.venv/bin/python server.py
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+npm --prefix web ci
 ```
 
-Terminal 2, from the same folder:
+**Terminal 1 — backend:**
 
 ```bash
-npm --prefix web run dev -- --hostname 0.0.0.0 --port 3001
+source .venv/bin/activate
+python server.py
 ```
 
-The frontend proxies the backend at `http://127.0.0.1:5001`. If you change the backend port, set `DRISHTI_PORT` for Flask and `DRISHTI_BACKEND_URL` for Next.js to matching values. On Windows, the Python executable is `.venv\Scripts\python.exe`.
+Leave it running on port **5001**. Open a second VS Code terminal in the **same project root**.
+
+**Terminal 2 — frontend:**
+
+```bash
+npm --prefix web run dev -- --port 3001
+```
+
+Open <http://localhost:3001/dashboard>, click **Start monitoring**, and allow camera access. Press **Ctrl+C** in each terminal to stop. The frontend command needs no Python environment activation. If a port is occupied by another project, use `python3.11 run.py` to select free ports automatically.
+
+On Windows, create the environment with `py -3.11 -m venv .venv`, install requirements with `.venv\Scripts\python.exe -m pip install -r requirements.txt`, and activate with `.\.venv\Scripts\Activate.ps1` in PowerShell. The npm commands are the same.
+
+### Your existing Desktop copy
+
+On Dhvani's Mac, the complete project is now at:
+
+```bash
+cd "/Users/dhvani/Desktop/driver_drowsiness-dhrishti-main"
+```
+
+Run that `cd` command in **both terminals** before starting services. This folder contains `server.py` and `web/package.json`. The archive project was moved here; its old iCloud archive path no longer exists. The `driver_drowsiness-dhrishti-main-backup` folder preserves the older, incomplete Desktop copy and lacks the Next.js frontend.
+
+If using the existing `venv` environment instead of a newly created `.venv`, the backend command is:
+
+```bash
+./venv/bin/python server.py
+```
+
+The frontend command remains `npm --prefix web run dev -- --port 3001`. A third person cloning the repository should follow the fresh setup above; they do not need your personal Desktop path or either local environment.
+
+### Codespaces with separate terminals
+
+Use the same fresh setup and two-terminal commands above from the repository root, or use the combined launcher. Open port 3001 through the **Ports** panel and use its forwarded HTTPS URL rather than your laptop's localhost. The frontend proxies Flask on port 5001, so that backend port does not need forwarding.
 
 ## Troubleshooting
 
